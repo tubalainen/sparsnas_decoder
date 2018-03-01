@@ -217,6 +217,7 @@ public:
         m += sprintf(m, "{\"CRC\": \"ERR\"");
       }
 
+      m += sprintf(m, ",\"Data4\": \"0x%.2x\"", data_[4]);
       m += sprintf(m, ",\"Sensor\":%6d}\n", SENSOR_ID);
       char* topic = (crc == packet_crc) ? MQTT_TOPIC : MQTT_CRC_TOPIC;
       if (!testing) {
