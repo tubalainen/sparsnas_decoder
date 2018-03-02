@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cmath>
 #include <complex>
+#include <time.h>
 #include <cstring>
 #include <mosquitto.h>
 
@@ -114,11 +115,32 @@ int error_sum_count;
 
 class SignalDetector {
 
+private:
+  float pulses_;
+  time_t pulseTime_;
+
+  float calculateWatt(uint32_t pulses, uint16_t effect) {
+    double timeDiff = difftime(time(NULL), pulseTime_) * 3600; // difftime returns seconds
+    float watt = ((3600000.0 / PULSES_PER_KWH) * 1024) / (effect);
+    pulseTime_ = time(NULL);
+
+    if (watt > 25000 && pulses_ != 0) {
+      fprintf(stderr, "Recalculates Watt (%.2f) ", watt);
+      // W = 1000 × kWh / h
+      watt = 1000 * ((pulses - pulses_) / PULSES_PER_KWH) / timeDiff;
+      fprintf(stderr, "new %.2f\n", watt);
+    }
+    pulses_ = pulses;
+    return watt;
+  }
+
 public:
   SignalDetector() {
     shift_ = 0;
     found_sync_ = 0;
     bits_ = 0;
+    pulses_ = 0;
+    pulseTime_ = time(NULL);
   }
 
   void add(bool v) {
@@ -178,7 +200,7 @@ public:
         for (int i = 0; i < 18; i++)
           m += sprintf(m, "%.2X ", data_[i]);
         m += sprintf(m, "\"");
-      } else if (crc == packet_crc) {
+      } else {
         bad = false;
         int seq = (dec[9] << 8 | dec[10]);
         unsigned int effect = (dec[11] << 8 | dec[12]);
@@ -188,17 +210,18 @@ public:
         int data4 = data_[4]^0x0f;
 //      Note that data_[4] cycles between 0-3 when you first put in the batterys in t$
         if(data4 == 1){
-          watt = (double)((3600000 / PULSES_PER_KWH) * 1024) / (effect);
+          watt = calculateWatt(pulse, effect);
+        } else if (data4 == 0 ) {
+          watt = effect * 24 / 100000.0;
         }
         m += sprintf(m, "{\"Sequence\": %5d,\"Watt\": %7.2f,\"kWh\": %d.%.3d,\"battery\": %d,\"FreqErr\": %.2f,\"Effect\": %d", seq, watt, pulse/PULSES_PER_KWH, pulse%PULSES_PER_KWH, battery, freq, effect);
         if (testing && crc == packet_crc) {
           error_sum += fabs(freq);
           error_sum_count += 1;
         }
-      } else {
-        m += sprintf(m, "{\"CRC\": \"ERR\"");
       }
 
+      m += sprintf(m, ",\"Data4\": %d", data4);
       m += sprintf(m, ",\"Sensor\":%6d}\n", SENSOR_ID);
       char* topic = (crc == packet_crc) ? MQTT_TOPIC : MQTT_CRC_TOPIC;
       if (!testing) {
