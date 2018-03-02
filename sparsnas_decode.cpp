@@ -124,9 +124,12 @@ private:
     float watt = ((3600000.0 / PULSES_PER_KWH) * 1024) / (effect);
     pulseTime_ = time(NULL);
 
-    if (watt > 25000 && pulses_ != 0)
+    if (watt > 25000 && pulses_ != 0) {
+      fprintf(stderr, "Recalculates Watt (%.2f) ", watt);
       // W = 1000 × kWh / h
       watt = 1000 * ((pulses - pulses_) / PULSES_PER_KWH) / timeDiff;
+      fprintf(stderr, "new %.2f\n", watt);
+    }
     pulses_ = pulses;
     return watt;
   }
