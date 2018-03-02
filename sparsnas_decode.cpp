@@ -207,9 +207,12 @@ public:
         int pulse = (dec[13] << 24 | dec[14] << 16 | dec[15] << 8 | dec[16]);
         int battery = dec[17];
         float watt = effect * 24;
+        int data4 = data_[4]^0x0f;
 //      Note that data_[4] cycles between 0-3 when you first put in the batterys in t$
-        if((data_[4]^0x0f) == 1){
+        if(data4 == 1){
           watt = calculateWatt(pulse, effect);
+        } else if (data4 == 0 ) {
+          watt = effect * 24 / 100000.0;
         }
         m += sprintf(m, "{\"Sequence\": %5d,\"Watt\": %7.2f,\"kWh\": %d.%.3d,\"battery\": %d,\"FreqErr\": %.2f,\"Effect\": %d", seq, watt, pulse/PULSES_PER_KWH, pulse%PULSES_PER_KWH, battery, freq, effect);
         if (testing && crc == packet_crc) {
@@ -220,7 +223,7 @@ public:
         m += sprintf(m, "{\"CRC\": \"ERR\"");
       }
 
-      m += sprintf(m, ",\"Data4\": \"0x%.2x\"", data_[4]);
+      m += sprintf(m, ",\"Data4\": %d", data4);
       m += sprintf(m, ",\"Sensor\":%6d}\n", SENSOR_ID);
       char* topic = (crc == packet_crc) ? MQTT_TOPIC : MQTT_CRC_TOPIC;
       if (!testing) {
