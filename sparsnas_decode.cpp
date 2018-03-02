@@ -200,7 +200,7 @@ public:
         for (int i = 0; i < 18; i++)
           m += sprintf(m, "%.2X ", data_[i]);
         m += sprintf(m, "\"");
-      } else if (crc == packet_crc) {
+      } else {
         bad = false;
         int seq = (dec[9] << 8 | dec[10]);
         unsigned int effect = (dec[11] << 8 | dec[12]);
@@ -219,8 +219,6 @@ public:
           error_sum += fabs(freq);
           error_sum_count += 1;
         }
-      } else {
-        m += sprintf(m, "{\"CRC\": \"ERR\"");
       }
 
       m += sprintf(m, ",\"Data4\": %d", data4);
