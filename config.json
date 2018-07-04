@@ -1,0 +1,23 @@
+{
+  "name": "Sparsnäs Decoder",
+  "version": "0.3",
+  "slug": "sparsnas_decoder",
+  "description": "Decoder for IKEA Sparsnäs",
+  "url": "https://github.com/tubalainen/sparsnas_decoder",
+  "startup": "application",
+  "boot": "auto",
+  "map": ["config:rw"],
+  "options": {
+    "run command": docker build -t sparsnas --build-arg SENSORS="1234 1000" \
+  --build-arg MQTT_HOST=192.168.x.x --build-arg MQTT_PORT=1883 \
+  --build-arg MQTT_USERNAME=username --build-arg MQTT_PASSWORD=password \
+  https://github.com/tubalainen/sparsnas_decoder.git
+    "host_network": true,
+    "devices": /dev/ttyAMA0:/dev/ttyAMA0:rwm
+  },
+  "schema": {
+    "run command": "str",
+    "host_network": "bool",
+    "devices": "str",
+  }
+}
